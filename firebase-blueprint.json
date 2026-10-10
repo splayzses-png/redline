@@ -1,0 +1,209 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User account and Free Fire player credentials",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "description": "Email address" },
+        "phone": { "type": "string", "description": "Phone number with +91 country code" },
+        "displayName": { "type": "string", "description": "Public community display name" },
+        "freeFireUid": { "type": "string", "description": "Unique Free Fire numeric UID (8-12 digits)" },
+        "freeFireIgn": { "type": "string", "description": "Free Fire In-Game Name" },
+        "avatarUrl": { "type": "string", "description": "Profile picture URL" },
+        "role": { "type": "string", "enum": ["player", "moderator", "owner"], "description": "Access control role" },
+        "isPhoneVerified": { "type": "boolean", "description": "Whether phone OTP has been verified" },
+        "isEmailVerified": { "type": "boolean", "description": "Whether email is verified" },
+        "status": { "type": "string", "enum": ["active", "suspended", "banned"], "description": "Account status" },
+        "referralCode": { "type": "string", "description": "User unique referral code" },
+        "referredBy": { "type": "string", "description": "Referrer user UID" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName", "role", "status", "createdAt"]
+    },
+    "Tournament": {
+      "title": "Tournament",
+      "description": "Free Fire Scrims and Tournament event document",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "slug": { "type": "string" },
+        "title": { "type": "string" },
+        "gameMode": { "type": "string", "enum": ["solo", "duo", "squad", "clash_squad", "custom"] },
+        "matchFormat": { "type": "string", "enum": ["battle_royale", "clash_squad_best_of_3", "custom"] },
+        "map": { "type": "string", "enum": ["Bermuda", "Purgatory", "Kalahari", "Alpine", "NexTerra", "Random"] },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "published",
+            "registration_open",
+            "registration_closed",
+            "check_in",
+            "live",
+            "provisional_results",
+            "disputed",
+            "finalized",
+            "cancelled"
+          ]
+        },
+        "isFree": { "type": "boolean" },
+        "entryFeeInr": { "type": "number" },
+        "prizePoolInr": { "type": "number" },
+        "totalSlots": { "type": "number" },
+        "filledSlots": { "type": "number" },
+        "confirmedSlots": { "type": "number" },
+        "startTime": { "type": "string", "format": "date-time" },
+        "registrationDeadline": { "type": "string", "format": "date-time" },
+        "checkInWindowMinutes": { "type": "number" },
+        "roomCredentialsReleased": { "type": "boolean" },
+        "rules": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "gameMode", "status", "isFree", "totalSlots", "startTime"]
+    },
+    "TournamentRoom": {
+      "title": "TournamentRoom",
+      "description": "Confidential Custom Room ID & Password isolated from public reads",
+      "type": "object",
+      "properties": {
+        "tournamentId": { "type": "string" },
+        "roomId": { "type": "string" },
+        "roomPassword": { "type": "string" },
+        "releasedAt": { "type": "string", "format": "date-time" },
+        "releasedBy": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["tournamentId", "roomId", "roomPassword"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Slot booking record for a tournament",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "tournamentId": { "type": "string" },
+        "userId": { "type": "string" },
+        "teamId": { "type": "string" },
+        "slotNumber": { "type": "number" },
+        "playerIgn": { "type": "string" },
+        "playerUid": { "type": "string" },
+        "rosterSnapshot": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": ["reserved", "confirmed", "checked_in", "completed", "cancelled", "waitlisted", "rejected"]
+        },
+        "reservedAt": { "type": "string", "format": "date-time" },
+        "reservationExpiresAt": { "type": "string", "format": "date-time" },
+        "confirmedAt": { "type": "string", "format": "date-time" },
+        "checkedInAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "tournamentId", "userId", "slotNumber", "status"]
+    },
+    "Team": {
+      "title": "Team",
+      "description": "Esports clan / squad registration",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "tag": { "type": "string" },
+        "captainUid": { "type": "string" },
+        "memberUids": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "captainUid"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Append-only operational audit log for sensitive admin and moderator actions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "actorUid": { "type": "string" },
+        "actorRole": { "type": "string" },
+        "action": { "type": "string" },
+        "targetType": { "type": "string" },
+        "targetId": { "type": "string" },
+        "details": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "actorUid", "action", "timestamp"]
+    },
+    "SupportTicket": {
+      "title": "SupportTicket",
+      "description": "Player inquiry or match dispute ticket",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userDisplayName": { "type": "string" },
+        "tournamentId": { "type": "string" },
+        "category": { "type": "string", "enum": ["match_dispute", "slot_issue", "account_profile", "prize_settlement", "other"] },
+        "subject": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "in_progress", "resolved", "closed"] },
+        "priority": { "type": "string", "enum": ["low", "medium", "high", "urgent"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "category", "subject", "status", "createdAt"]
+    },
+    "PrizeRecord": {
+      "title": "PrizeRecord",
+      "description": "Read-only reward and prize settlement entry in the platform ledger",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "tournamentId": { "type": "string" },
+        "tournamentTitle": { "type": "string" },
+        "rank": { "type": "number" },
+        "amountInr": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending_review", "approved", "settled", "rejected", "cancelled"] },
+        "settledAt": { "type": "string", "format": "date-time" },
+        "manualPaymentReference": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "tournamentId", "amountInr", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile document owned by user; readable by community, strictly restricted writes."
+    },
+    "/tournaments/{tournamentId}": {
+      "schema": { "$ref": "#/entities/Tournament" },
+      "description": "Public tournament records for published events; private drafts; managed by owner/moderator."
+    },
+    "/tournament_rooms/{tournamentId}": {
+      "schema": { "$ref": "#/entities/TournamentRoom" },
+      "description": "Isolated confidential room credentials; never publicly readable; accessible only to registered players during check_in/live."
+    },
+    "/bookings/{bookingId}": {
+      "schema": { "$ref": "#/entities/Booking" },
+      "description": "Tournament slot bookings; readable by booking owner and tournament moderators."
+    },
+    "/teams/{teamId}": {
+      "schema": { "$ref": "#/entities/Team" },
+      "description": "Registered player clans and squads."
+    },
+    "/audit_logs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Append-only operational audit log; admin read only; server write only."
+    },
+    "/support_tickets/{ticketId}": {
+      "schema": { "$ref": "#/entities/SupportTicket" },
+      "description": "Player support tickets and dispute records."
+    },
+    "/prize_records/{recordId}": {
+      "schema": { "$ref": "#/entities/PrizeRecord" },
+      "description": "Read-only prize settlement ledger entries."
+    }
+  }
+}

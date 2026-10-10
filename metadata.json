@@ -1,0 +1,6 @@
+{
+  "name": "REDLINE PAID SCRIMS",
+  "description": "India-first Free Fire esports tournament hosting platform with verified slot registration, custom room credentials release, and live leaderboards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

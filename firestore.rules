@@ -1,0 +1,133 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isUser(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isOwner() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'owner' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         getUserData().role == 'owner')
+      );
+    }
+
+    function isModerator() {
+      return isAuthenticated() && (
+        isOwner() ||
+        request.auth.token.role == 'moderator' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         getUserData().role == 'moderator')
+      );
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      // Allow user creation on sign-up; forbid self-elevation to moderator or owner
+      allow create: if isUser(userId) &&
+        request.resource.data.role == 'player' &&
+        request.resource.data.uid == userId;
+      // Allow user updates to their own profile, but forbid updating role or status
+      allow update: if (isUser(userId) &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'status', 'uid', 'email'])) ||
+        isOwner();
+      allow delete: if isOwner();
+    }
+
+    // Tournaments
+    match /tournaments/{tournamentId} {
+      // Drafts can only be read by staff; published events are public
+      allow read: if resource.data.status != 'draft' || isModerator();
+      allow create, update, delete: if isModerator();
+    }
+
+    // Confidential Tournament Rooms (Room ID & Password)
+    // NEVER publicly readable! Only staff or registered, confirmed participants can access.
+    match /tournament_rooms/{tournamentId} {
+      allow read: if isModerator() || (
+        isAuthenticated() &&
+        exists(/databases/$(database)/documents/bookings/$(request.auth.uid + '_' + tournamentId)) &&
+        get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.roomCredentialsReleased == true
+      );
+      allow write: if isModerator();
+    }
+
+    // Bookings
+    match /bookings/{bookingId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || isModerator()
+      );
+      // Create allowed for player reserving their own slot
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.status in ['reserved', 'confirmed'];
+      // User can cancel their own booking; moderators can manage all
+      allow update: if isModerator() || (
+        isAuthenticated() &&
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'checkedInAt'])
+      );
+      allow delete: if isModerator();
+    }
+
+    // Teams
+    match /teams/{teamId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.captainUid == request.auth.uid;
+      allow update: if isAuthenticated() && (
+        resource.data.captainUid == request.auth.uid || isModerator()
+      );
+      allow delete: if isModerator() || (isAuthenticated() && resource.data.captainUid == request.auth.uid);
+    }
+
+    // Audit logs - append-only, moderator/owner read-only, privileged write
+    match /audit_logs/{logId} {
+      allow read: if isModerator();
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // strictly immutable
+    }
+
+    // Support tickets
+    match /support_tickets/{ticketId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || isModerator()
+      );
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isModerator() || (
+        isAuthenticated() && resource.data.userId == request.auth.uid
+      );
+      allow delete: if isOwner();
+    }
+
+    // Read-only prize records
+    match /prize_records/{recordId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || isModerator()
+      );
+      allow write: if isOwner();
+    }
+
+    // Announcements
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow write: if isModerator();
+    }
+
+    // Default deny for anything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
